@@ -33,6 +33,7 @@ public class BasicScreen implements ScreenInterface {
 	
 	// Keep track of the mouse cursor since I cannot find a way of
 	//  determining the current mouse position
+	// This is NOT actual values because Android has mouse acceleration.
 	private int mouseX = -1;
 	private int mouseY = -1;
 	
@@ -75,7 +76,6 @@ public class BasicScreen implements ScreenInterface {
 	@Override
 	public void enter (int toggleMask) {
 		allKeysUp ();
-		
 	}
 	
 	@Override
@@ -145,18 +145,35 @@ public class BasicScreen implements ScreenInterface {
         }
         
         if (mouseX < 0 || mouseY < 0) {
-        	Injection.movemouse (-width, -height);
+        	// Injection.movemouse (-width, -height);
         	Injection.movemouse(x, y);
-        	mouseX = x;
-        	mouseY = y;
         } else {
 	        int dx = x - mouseX;
-	    	int dy = y - mouseY; 
+	    	int dy = y - mouseY;
+	    	// Workaround inaccurate mouseX, mouseY by continuing
+	    	// to move the mouse when we believe it is at screen 
+	    	// edges (but actually not).
+	    	if (dx == 0) {
+	    		if (mouseX == 0) {
+	    			dx -= 3;
+	    		} else if (mouseX >= width - 1) {
+	    			dx += 3;
+	    		}
+	    	}
+	    	if (dy == 0) {
+	    		if (mouseY == 0) {
+	    			dy -= 3;
+	    		} else if (mouseY >= height - 1) {
+	    			dy += 3;
+	    		}
+	    	}
 		  	Injection.movemouse (dx, dy);
 	    	// Adjust 'known' cursor position
-	        mouseX += dx;
-	        mouseY += dy;
+	        mouseX = x;
+	        mouseY = y;
         }
+    	mouseX = x;
+    	mouseY = y;
 	}
 	
 	@Override
@@ -174,7 +191,9 @@ public class BasicScreen implements ScreenInterface {
 	    mouseY = -1;
 	    if (inject) {
 	    	// moving to height/width will hide mouse pointer
-	    	Injection.movemouse(width, height);
+	    	// move to left-top. This works better if the android
+	    	// is on the right of some other screen.
+	    	Injection.movemouse(-width, -height);
 	    }
 	}
 
